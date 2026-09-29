@@ -138,7 +138,8 @@ role="host";
 connet();
 
   const send=()=>{
-  if(ws.readyState===WebSocket.OPEN){
+  if(ws.readyState===WebSocket.OPEN)
+  {
     ws.send(JSON.stringify({
       type:"create",
       name:n
