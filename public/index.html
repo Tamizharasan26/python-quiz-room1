@@ -137,9 +137,8 @@ return alert("Enter host name");
 role="host";
 connect();
 
-  const send=()=>{
-  if(ws.readyState===WebSocket.OPEN)
-  {
+const send=()=>{
+  if(ws.readyState===WebSocket.OPEN){
     ws.send(JSON.stringify({
       type:"create",
       name:n
@@ -150,7 +149,7 @@ connect();
 };
 send();
 }
-  
+
 function joinRoom(){
 const n=document.getElementById("playerName").value.trim();
 const c=document.getElementById("roomInput").value.trim().toUpperCase();
@@ -159,8 +158,7 @@ if(!n || c.length!==4)
 return alert("Enter name and 4-character room code");
 
 role="player";
-connect();
-
+connect();n
 const send=()=>{
   if(ws.readyState===WebSocket.OPEN){
     ws.send(JSON.stringify({
