@@ -135,7 +135,7 @@ if(!n)
 return alert("Enter host name");
 
 role="host";
-connet();
+connect();
 
   const send=()=>{
   if(ws.readyState===WebSocket.OPEN)
@@ -149,6 +149,8 @@ connet();
   }
 };
 send();
+}
+  
 function joinRoom(){
 const n=document.getElementById("playerName").value.trim();
 const c=document.getElementById("roomInput").value.trim().toUpperCase();
