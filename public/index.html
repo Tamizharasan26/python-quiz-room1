@@ -135,16 +135,19 @@ if(!n)
 return alert("Enter host name");
 
 role="host";
-connect();
+connet();
 
-setTimeout(()=>{
-ws.send(JSON.stringify({
-type:"create",
-name:n
-}));
-},250);
-}
-
+  const send=()=>{
+  if(ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({
+      type:"create",
+      name:n
+    }));
+  }else{
+    setTimeout(send,100);
+  }
+};
+send();
 function joinRoom(){
 const n=document.getElementById("playerName").value.trim();
 const c=document.getElementById("roomInput").value.trim().toUpperCase();
