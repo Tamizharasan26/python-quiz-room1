@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Python Quiz Room</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#fff;color:#111}
+.wrap{max-width:850px;margin:auto;padding:25px 18px}
+.screen{display:none}.active{display:block}
+h1{text-align:center;font-size:38px}
+.sub{text-align:center;font-size:18px;margin:10px 0 30px}
+.card{border:2px solid #111;border-radius:12px;padding:22px;margin:18px 0}
+input{width:100%;padding:14px;border:2px solid #111;border-radius:8px;font-size:17px;margin:8px 0}
+button{padding:13px 22px;border:2px solid #111;background:#111;color:white;border-radius:8px;font-size:17px;cursor:pointer;margin:6px 4px}
+button.secondary{background:white;color:#111}
+button:disabled{opacity:.45}
+.room{font-size:42px;font-weight:bold;text-align:center;letter-spacing:6px}
+.top{display:flex;justify-content:space-between;font-weight:bold;font-size:18px}
+.timer{border:2px solid #111;border-radius:8px;padding:8px 14px}
+.danger{background:#111;color:#fff}
+.question{text-align:center;font-size:25px;font-weight:bold;margin:30px 0 20px;line-height:1.4}
+.code{background:#f2f2f2;border:1px solid #aaa;padding:15px;border-radius:8px;white-space:pre-wrap;font-family:monospace;max-width:700px;margin:15px auto}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.opt{background:#fff;color:#111;text-align:left;border:2px solid #111;min-height:62px}
+.status{text-align:center;font-size:18px;margin:18px}
+.score{text-align:center;font-size:48px;font-weight:bold}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #111;padding:10px;text-align:center}
+@media(max-width:650px){
+.row,.options{grid-template-columns:1fr}
+h1{font-size:30px}
+.question{font-size:21px}
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<section id="home" class="screen active">
+<h1>PYTHON QUIZ ROOM</h1>
+<div class="sub">15 Questions • 20 Seconds Each</div>
+
+<div class="card">
+<h2>Create Room</h2>
+<input id="hostName" placeholder="Host name">
+<button onclick="createRoom()">CREATE ROOM</button>
+</div>
+
+<div class="card">
+<h2>Join Room</h2>
+<input id="playerName" placeholder="Your name">
+<input id="roomInput" placeholder="Room code" maxlength="4">
+<button onclick="joinRoom()">JOIN ROOM</button>
+</div>
+
+<p style="text-align:center">
+Presented by <b>G. Tamizharasan & M. Pasupathi</b>
+</p>
+</section>
+
+<section id="lobby" class="screen">
+<h1>ROOM</h1>
+<div class="room" id="roomCode"></div>
+<p class="status" id="lobbyStatus"></p>
+<div id="players"></div>
+
+<div style="text-align:center">
+<button id="startBtn" onclick="startQuiz()">START QUIZ</button>
+</div>
+</section>
+
+<section id="quiz" class="screen">
+<div class="top">
+<span id="qn"></span>
+<span class="timer" id="timer">20 sec</span>
+</div>
+
+<div class="question" id="question"></div>
+<div class="code" id="code" style="display:none"></div>
+<div class="options" id="options"></div>
+<div class="status" id="status"></div>
+</section>
+
+<section id="final" class="screen">
+<h1>QUIZ COMPLETE</h1>
+<div class="score" id="myScore"></div>
+
+<h2>Leaderboard</h2>
+
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Name</th>
+<th>Score / 15</th>
+</tr>
+</thead>
+<tbody id="board"></tbody>
+</table>
+
+<p style="text-align:center;margin-top:25px">
+G. Tamizharasan & M. Pasupathi
+</p>
+</section>
+
+</div>
+
+<script>
+let ws,role,room,seconds,timer;
+
+function connect(){
+ws=new WebSocket(
+(location.protocol==="https:"?"wss://":"ws://")+location.host
+);
+
+ws.onmessage=e=>handle(JSON.parse(e.data));
+
+ws.onclose=()=>alert("Connection closed.");
+}
+
+function show(id){
+document.querySelectorAll(".screen")
+.forEach(x=>x.classList.remove("active"));
+
+document.getElementById(id).classList.add("active");
+}
+
+function createRoom(){
+const n=document.getElementById("hostName").value.trim();
+
+if(!n)
+return alert("Enter host name");
+
+role="host";
+connect();
+
+setTimeout(()=>{
+ws.send(JSON.stringify({
+type:"create",
+name:n
+}));
+},250);
+}
+
+function joinRoom(){
+const n=document.getElementById("playerName").value.trim();
+const c=document.getElementById("roomInput").value.trim().toUpperCase();
+
+if(!n || c.length!==4)
+return alert("Enter name and 4-character room code");
+
+role="player";
+connect();
+
+setTimeout(()=>{
+ws.send(JSON.stringify({
+type:"join",
+name:n,
+code:c
+}));
+},250);
+}
+
+function startQuiz(){
+ws.send(JSON.stringify({type:"start"}));
+}
+
+function handle(m){
+
+if(m.type==="roomCreated"){
+room=m.code;
+
+document.getElementById("roomCode").textContent=room;
+
+document.getElementById("startBtn")
+.style.display="inline-block";
+
+document.getElementById("lobbyStatus")
+.textContent="Share this code with all participants.";
+
+show("lobby");
+}
+
+if(m.type==="joined"){
+room=m.code;
+
+document.getElementById("roomCode").textContent=room;
+
+document.getElementById("startBtn")
+.style.display="none";
+
+document.getElementById("lobbyStatus")
+.textContent="Waiting for the host to start...";
+
+show("lobby");
+}
+
+if(m.type==="players"){
+document.getElementById("players").innerHTML=
+"<b>Players: "+m.count+"</b><p>"+
+m.names.join(" • ")+"</p>";
+}
+
+if(m.type==="question"){
+show("quiz");
+loadQ(m);
+startTimer(m.seconds);
+}
+
+if(m.type==="answerReceived"){
+document.getElementById("status").textContent=
+m.correct?"Correct!":"Answer recorded.";
+
+document.querySelectorAll(".opt")
+.forEach(b=>b.disabled=true);
+}
+
+if(m.type==="questionResult"){
+document.getElementById("status").textContent=
+"Correct answer: "+
+String.fromCharCode(65+m.correctIndex);
+}
+
+if(m.type==="final"){
+
+show("final");
+
+const me=[...m.leaderboard];
+
+const myName=document.getElementById("playerName").value.trim();
+
+document.getElementById("myScore").textContent=
+"Your score: "+
+(me.find(x=>x.name===myName)?.score||0)+
+" / 15";
+
+document.getElementById("board").innerHTML=
+me.map((p,i)=>
+`<tr>
+<td>${i+1}</td>
+<td>${p.name}</td>
+<td>${p.score} / 15</td>
+</tr>`
+).join("");
+}
+
+if(m.type==="error")
+alert(m.message);
+}
+
+function loadQ(m){
+
+document.getElementById("qn").textContent=
+`Question ${m.number} / ${m.total}`;
+
+document.getElementById("question").textContent=m.q;
+
+const c=document.getElementById("code");
+
+if(m.code){
+c.style.display="block";
+c.textContent=m.code;
+}else{
+c.style.display="none";
+}
+
+document.getElementById("status").textContent="";
+
+const o=document.getElementById("options");
+
+o.innerHTML="";
+
+m.options.forEach((x,i)=>{
+
+const b=document.createElement("button");
+
+b.className="opt";
+
+b.textContent=
+String.fromCharCode(65+i)+". "+x;
+
+b.onclick=()=>answer(i);
+
+o.appendChild(b);
+});
+}
+
+function answer(i){
+
+ws.send(JSON.stringify({
+type:"answer",
+index:i
+}));
+
+document.querySelectorAll(".opt")
+.forEach(b=>b.disabled=true);
+
+document.getElementById("status").textContent=
+"Answer submitted. Waiting...";
+}
+
+function startTimer(s){
+
+clearInterval(timer);
+
+seconds=s;
+
+const el=document.getElementById("timer");
+
+el.classList.remove("danger");
+
+el.textContent=seconds+" sec";
+
+timer=setInterval(()=>{
+
+seconds--;
+
+el.textContent=seconds+" sec";
+
+if(seconds<=5)
+el.classList.add("danger");
+
+if(seconds<=0){
+
+clearInterval(timer);
+
+document.querySelectorAll(".opt")
+.forEach(b=>b.disabled=true);
+
+document.getElementById("status").textContent=
+"Time up! Waiting for next question...";
+}
+
+},1000);
+}
+
+connect();
+</script>
+
+</body>
+</html>
