@@ -158,14 +158,18 @@ return alert("Enter name and 4-character room code");
 role="player";
 connect();
 
-setTimeout(()=>{
-ws.send(JSON.stringify({
-type:"join",
-name:n,
-code:c
-}));
-},250);
-}
+const send=()=>{
+  if(ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({
+      type:"join",
+      name:n,
+      code:c
+    }));
+  }else{
+    setTimeout(send,100);
+  }
+};
+send();
 
 function startQuiz(){
 ws.send(JSON.stringify({type:"start"}));
